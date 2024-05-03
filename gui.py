@@ -11,7 +11,15 @@ import configparser
 PATH = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 os.path.join(PATH, 'app.py')
 config = configparser.ConfigParser()
-config.read("settings.ini")
+if os.path.exists('settings.ini'):
+    config.read("settings.ini")
+else:
+    with open('settings.ini', 'w') as confgile:
+        confgile.writelines('[CONFIG]\n')
+        confgile.writelines('bind_key = None\n')
+        confgile.writelines('email = None\n')
+        confgile.writelines('passw = None\n')
+    config.read("settings.ini")
 sldksg = None
 
 import app
@@ -21,20 +29,16 @@ def waitbindkey():
     while True:
             config.read("settings.ini")
             event = keyboard.read_event()
-            print(event.name)
-            print('\n')
-            print(config["CONFIG"]['bind_key'])
             if event.event_type == keyboard.KEY_DOWN and event.name == config["CONFIG"]['bind_key']:
                 if sldksg is None or not sldksg.is_alive():
                     sldksg = multiprocessing.Process(target=app.main)
                     sldksg.start()
-                    print('start thread')
                 elif sldksg.is_alive():
                     try:
                         sldksg.terminate()
                         sldksg.join()
                     except Exception as ex:
-                        print(ex)
+                        pass
 
 def guiapp(page: ft.Page):
     page.title = "🔥UrokJoiner🔥"
@@ -55,7 +59,6 @@ def guiapp(page: ft.Page):
         if sldksg is None or not sldksg.is_alive():
             sldksg = multiprocessing.Process(target=app.main)
             sldksg.start()
-            print('start thread')
             autojoinbutton.text = 'Auto-Join On'
             page.update()
         elif sldksg.is_alive():

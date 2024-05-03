@@ -9,8 +9,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import fake_useragent
-import json
-import asyncio
 import pyautogui
 from time import sleep
 
@@ -54,7 +52,6 @@ def joinonlesson(browser):
         if hours == 15:
             numberoflesson = 7
     except:
-        print('Слишком поздно или слишком рано!')
         return
     if now.weekday() == 3:
         numberoflesson -= 1
@@ -63,31 +60,24 @@ def joinonlesson(browser):
     try:
         number = lessons[now.weekday()][numberoflesson]
     except KeyError:
-        print('Сейчас выходные алоу')
         return
     sleep(2)
     uroki = browser.find_elements(By.CLASS_NAME, "calendar-event-subject")
     try:
         urok = 1
         for i in uroki:
-            print(urok)
-            print(number)
             if urok == number:
                 jointolessonhuman = ActionChains(browser).click(i)
                 jointolessonhuman.perform()
-                print('Сєр, Да, Сєр!')
                 break
-            hover = ActionChains(browser, 45).move_to_element(i)
-            hover.perform()
             urok += 1
     except Exception as e: 
-        print(e)
+        return
     try:                                                                     
         WebDriverWait(browser, 5).until(
             EC.element_to_be_clickable((By.XPATH, '/html/body/app-root/ng-kit/dropdown/div/div/div[3]/div/ev-button/button'))
         ).click()
     except:
-        print('uroka nety!')
         return
     all_windows = browser.window_handles
     new_window = all_windows[-1]
@@ -105,7 +95,8 @@ def joinonlesson(browser):
         sleep(10)
         pyautogui.moveTo(1005, 600)
         pyautogui.click()
-    return
+    browser.close()
+    browser.quit()
 
 
 
@@ -113,7 +104,7 @@ def login(username, parol):
     try:
         options = Options()
         options.add_argument(f'user-agent={fake_useragent.UserAgent}')
-        # options.add_argument("--headless=new")
+        options.add_argument("--headless=new")
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         browser = webdriver.Chrome(options=options)
@@ -153,16 +144,13 @@ def main():
                 passw = data['passw']
                 now = datetime.datetime.now()
                 hours = now.hour
-                print(hours)
                 if 8 <= hours <= 15 and email != 'None' and passw != 'None':
-                    print('Сєр, Да, Сєр!')
                     if hours == 8:
                         login(email, passw)
                         sleep(((60 - now.minute) + 23)*60)
                     if (9 or 10 or 11 or 12) == hours:
                         login(email, passw)
                         sleep(((60 - now.minute) + 18)*60)
-                        print(f'spim')
                     if hours == 13:
                         login(email, passw)
                         sleep(((60 - now.minute) + 13)*60)
@@ -170,7 +158,6 @@ def main():
                         login(email, passw)
                         sleep(((60 - now.minute) + 8)*60)
                     if hours == 15:
-                        print('15.00')
                         login(email, passw)
                         sleep(((60 - now.minute) + 60)*60)
                 else:
