@@ -10,12 +10,16 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import fake_useragent
 import pyautogui
+from playsound import playsound
 from time import sleep
 
 
 PATH = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 config = configparser.ConfigParser()
 config.read("settings.ini")
+
+def play_sound(file_path):
+    playsound(file_path)
 def xpathexist(path, delay, browser):
     try:
        WebDriverWait(browser, delay/2).until(
@@ -132,6 +136,7 @@ def login(username, parol):
     finally:
         browser.close()
         browser.quit()
+        play_sound(f"{PATH}\\")
     return
 email = 'None'
 passw = 'None'
