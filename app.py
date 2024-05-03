@@ -20,14 +20,6 @@ config.read("settings.ini")
 
 def play_sound(file_path):
     playsound(file_path)
-def xpathexist(path, delay, browser):
-    try:
-       WebDriverWait(browser, delay/2).until(
-            EC.element_to_be_clickable((By.XPATH, path))
-        ).click 
-       return True
-    except:
-       return False
 def joinonlesson(browser):
     now = datetime.datetime.now()
     hours = now.hour
