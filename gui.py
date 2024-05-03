@@ -9,23 +9,22 @@ import configparser
 
 # Получаем путь к включенным файлам
 PATH = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+os.path.join(PATH, 'app.py')
 config = configparser.ConfigParser()
 config.read("settings.ini")
 sldksg = None
 
-
-os.path.join(PATH, 'settings.ini')
-os.path.join(PATH, 'app.py')
+import app
 
 def waitbindkey():
     global sldksg
     while True:
-        print('button')
-        with open(f'{PATH}\\settings.json', 'r') as bindkeycheck:
-            data = json.load(bindkeycheck)
-            print(data)
+            config.read("settings.ini")
             event = keyboard.read_event()
-            if event.event_type == keyboard.KEY_DOWN and event.name == data['bind_key']:
+            print(event.name)
+            print('\n')
+            print(config["CONFIG"]['bind_key'])
+            if event.event_type == keyboard.KEY_DOWN and event.name == config["CONFIG"]['bind_key']:
                 if sldksg is None or not sldksg.is_alive():
                     sldksg = multiprocessing.Process(target=app.main)
                     sldksg.start()
@@ -75,50 +74,41 @@ def guiapp(page: ft.Page):
         page.update()
         event = keyboard.read_event()
         if event.event_type == keyboard.KEY_DOWN:
-            with open(f'{PATH}\\settings.json', 'r') as dgjadf:
-                datadgjadf = json.load(dgjadf)
-                with open(f'{PATH}\\settings.json', 'w') as bindk:
-                    datadgjadf['bind_key'] = event.name
-                    json.dump(datadgjadf, bindk)
-            text = datadgjadf['bind_key'].upper()
+            config["CONFIG"]['bind_key'] = event.name
+            with open('settings.ini', 'w') as configfile:
+                config.write(configfile)
+            text = config["CONFIG"]['bind_key']
             autojoinbind.text = f"Кнопка {text}"
             autojoinonbindkey = False
         page.update()
 
     def passinput(e):
-        with open(f'{PATH}\\settings.json', 'r') as f:
-            data = json.load(f)
-            if passwtextfield.value not in data['passw']:
-                with open(f'{PATH}\\settings.json', 'w') as file:
-                    data['passw'] = passwtextfield.value
-                    json.dump(data, file)
+        if passwtextfield.value != config["CONFIG"]['passw']:
+            config["CONFIG"]['passw'] = passwtextfield.value
+            with open('settings.ini', 'w') as configfile:
+                config.write(configfile)
 
     def emailinput(e):
-        with open(f'{PATH}\\settings.json', 'r') as f:
-            data = json.load(f)
-            if emailtextfield.value not in data['email']:
-                with open(f'{PATH}\\settings.json', 'w') as file:
-                    data['email'] = emailtextfield.value
-                    json.dump(data, file)
+        if emailtextfield.value != config["CONFIG"]['email']:
+            config["CONFIG"]['email'] = emailtextfield.value
+            with open('settings.ini', 'w') as configfile:
+                config.write(configfile)
 
-    with open(f"{PATH}\\settings.json", 'r') as file:
-        data = json.load(file)
-        if data['email'] != "None":
-            emailtextfield = ft.TextField(value=data['email'],label='Enter email', on_submit=emailinput)
-        else:
-            emailtextfield = ft.TextField(label='Enter email', on_submit=emailinput)
-        if data['passw'] != "None":
-            passwtextfield = ft.TextField(value=data['passw'],label='Enter password', on_submit=passinput, password=True)
-        else:
-            passwtextfield = ft.TextField(label='Enter password', on_submit=passinput, password=True)
+    data = config['CONFIG']
+    if data['email'] != "None":
+        emailtextfield = ft.TextField(value=data['email'],label='Enter email', on_submit=emailinput)
+    else:
+        emailtextfield = ft.TextField(label='Enter email', on_submit=emailinput)
+    if data['passw'] != "None":
+        passwtextfield = ft.TextField(value=data['passw'],label='Enter password', on_submit=passinput, password=True)
+    else:
+        passwtextfield = ft.TextField(label='Enter password', on_submit=passinput, password=True)
     chngthembutton = ft.IconButton(icon=ft.icons.SUNNY, on_click=changetheme)
 
     autojoinbutton = ft.OutlinedButton('Auto-Join Off', on_click=autojoin)
-    with open(f'{PATH}\\settings.json', 'r') as bindkeyjson:
-        data = json.load(bindkeyjson)
-        print(data['bind_key'])
-        text = data['bind_key'].upper()
-        autojoinbind = ft.TextButton(f"Кнопка {text}", on_click=bindkey)
+    data = config['CONFIG']
+    text = data['bind_key'].upper()
+    autojoinbind = ft.TextButton(f"Кнопка {text}", on_click=bindkey)
 
     mainrow = ft.Row(
         [

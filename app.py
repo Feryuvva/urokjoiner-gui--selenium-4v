@@ -1,3 +1,4 @@
+import configparser
 import datetime
 import os
 import sys
@@ -13,8 +14,10 @@ import asyncio
 import pyautogui
 from time import sleep
 
-PATH = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 
+PATH = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
+config = configparser.ConfigParser()
+config.read("settings.ini")
 def xpathexist(path, delay, browser):
     try:
        WebDriverWait(browser, delay/2).until(
@@ -145,8 +148,7 @@ fullapp = True
 def main():
     while True:
         try:
-            with open(f'{PATH}\\settings.json', 'r') as file:
-                data = json.load(file)
+                data = config['CONFIG']
                 email = data['email']
                 passw = data['passw']
                 now = datetime.datetime.now()
