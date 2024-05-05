@@ -1,5 +1,4 @@
 import flet as ft
-import keyboard
 import multiprocessing
 import sys
 import os
@@ -13,7 +12,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import fake_useragent
 import pyautogui
-# from playsound import playsound
 from time import sleep
 
 
@@ -39,37 +37,19 @@ config = configparser.ConfigParser()
 if not os.path.exists(SETTINGS_INI_PATH):
     with open(SETTINGS_INI_PATH, 'w') as configfile:
         configfile.write('[CONFIG]\n')
-        configfile.write('bind_key = None\n')
-        configfile.write('email = None\n')
-        configfile.write('passw = None\n')
+        configfile.write('email = \n')
+        configfile.write('passw = \n')
 
 # Читаем файл настроек
 config.read(SETTINGS_INI_PATH)
 sldksg = None
 
-def waitbindkey():
-    global sldksg
-    while True:
-        print(f"Process ID: {os.getpid()}")
-        config.read("settings.ini")
-        event = keyboard.read_event()
-        if event.event_type == keyboard.KEY_DOWN and event.name == config["CONFIG"]['bind_key']:
-            if sldksg is None or not sldksg.is_alive():
-                sldksg = multiprocessing.Process(target=main)
-                sldksg.start()
-            elif sldksg.is_alive():
-                try:
-                    sldksg.terminate()
-                    sldksg.join()
-                except Exception as ex:
-                    pass
-
 def guiapp(page: ft.Page):
-    print('start gui')
-    page.title = "🔥UrokJoiner🔥"
+    page.title = "🔥UrokJoiner v4🔥 by Feryuvva"
     page.theme_mode = 'dark'
-    page.window_width = 550
-    page.window_height = 450
+    page.window_width = 430
+    page.window_height = 270
+    page.window_resizable = False
     page.vertical_alignment=ft.MainAxisAlignment.CENTER
 
     def changetheme(e):
@@ -81,12 +61,13 @@ def guiapp(page: ft.Page):
 
     def autojoin(e):
         global sldksg
-        if sldksg is None or not sldksg.is_alive():
+        print('@' in config['CONFIG']['email'])
+        if (sldksg is None or not sldksg.is_alive()) and ('@' in config['CONFIG']['email'] == False):
             sldksg = multiprocessing.Process(target=main)
             sldksg.start()
             autojoinbutton.text = 'Auto-Join On'
             page.update()
-        elif sldksg.is_alive():
+        elif sldksg is not None and sldksg.is_alive():
             try:
                 sldksg.terminate()
                 sldksg.join()
@@ -94,28 +75,26 @@ def guiapp(page: ft.Page):
                 return
             autojoinbutton.text = 'Auto-Join Off'
             page.update()
-    def bindkey(e):  
-        global autojoinonbindkey
-        autojoinonbindkey = True
-        autojoinbind.text = "Wait..."  
-        page.update()
-        event = keyboard.read_event()
-        if event.event_type == keyboard.KEY_DOWN:
-            config["CONFIG"]['bind_key'] = event.name
-            with open('settings.ini', 'w') as configfile:
-                config.write(configfile)
-            text = config["CONFIG"]['bind_key']
-            autojoinbind.text = f"Кнопка {text}"
-            autojoinonbindkey = False
-        page.update()
+        else:
+            return
+
 
     def passinput(e):
+            config.read(SETTINGS_INI_PATH)
             if passwtextfield.value != config["CONFIG"]['passw']:
                 config["CONFIG"]['passw'] = passwtextfield.value
                 with open('settings.ini', 'w') as configfile:
                     config.write(configfile)
 
+    def submit(e):
+        config.read(SETTINGS_INI_PATH)
+        if emailtextfield.value != config["CONFIG"]['email'] and passwtextfield.value != config["CONFIG"]['passw']:
+            config["CONFIG"]['email'] = emailtextfield.value
+            config["CONFIG"]['passw'] = passwtextfield.value
+            with open('settings.ini', 'w') as configfile:
+                config.write(configfile)
     def emailinput(e):
+            config.read(SETTINGS_INI_PATH)
             if emailtextfield.value != config["CONFIG"]['email']:
                 config["CONFIG"]['email'] = emailtextfield.value
                 with open('settings.ini', 'w') as configfile:
@@ -133,25 +112,29 @@ def guiapp(page: ft.Page):
     chngthembutton = ft.IconButton(icon=ft.icons.SUNNY, on_click=changetheme)
 
     autojoinbutton = ft.OutlinedButton('Auto-Join Off', on_click=autojoin)
-    data = config['CONFIG']
-    text = data['bind_key'].upper()
-    autojoinbind = ft.TextButton(f"Кнопка {text}", on_click=bindkey)
 
+    submitbutton = ft.OutlinedButton('Submit', on_click=submit)
+
+    github = ft.IconButton(icon=ft.icons.MESSAGE, url="https://github.com/Feryuvva")
+    discord = ft.IconButton(icon=ft.icons.DISCORD, url="https://discordapp.com/users/1016393252972273764/")
     mainrow = ft.Row(
         [
             ft.Column([            
-                autojoinbutton,
-                autojoinbind,
                 emailtextfield,
-                passwtextfield
+                passwtextfield,
+                ft.Row([
+                    submitbutton,
+                    autojoinbutton
+                ])
             ]),
         ], alignment=ft.MainAxisAlignment.CENTER
     )
     row_left_down = ft.Row([
-        chngthembutton
+        chngthembutton,
+        github,
+        discord
     ], alignment=ft.MainAxisAlignment.START,vertical_alignment=ft.VerticalAlignment.END
     )
-    # config_path = os.path.join(PATH, 'settings.json')
     page.add(
         mainrow,
         row_left_down
@@ -238,7 +221,7 @@ def login(username, parol):
     try:
         options = Options()
         options.add_argument(f'user-agent={fake_useragent.UserAgent}')
-        # options.add_argument("--headless=new")
+        options.add_argument("--headless=new")
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         browser = webdriver.Chrome(options=options)
@@ -270,6 +253,7 @@ def login(username, parol):
 email = 'None'
 passw = 'None'
 def main():
+    print('start main()')
     while True:
         try:
             data = config['CONFIG']
@@ -277,42 +261,55 @@ def main():
             passw = data['passw']
             now = datetime.datetime.now()
             hours = now.hour
-            if 8 <= hours <= 15 and email != 'None' and passw != 'None':
-                if hours == 8:
+            if (8 <= hours <= 15 and email != 'None' and passw != 'None'):
+                if (hours == 8) and now.minute >= 27:
                     login(email, passw)
                     sleep(((60 - now.minute) + 23)*60)
-                if (9 or 10 or 11 or 12) == hours:
+                if ((9 or 10 or 11 or 12) == hours) and now.minute >= 23:
                     login(email, passw)
                     sleep(((60 - now.minute) + 18)*60)
-                if hours == 13:
+                if (hours == 13) and now.minute >= 17:
                     login(email, passw)
                     sleep(((60 - now.minute) + 13)*60)
-                if hours == 14:
+                if (hours == 14) and now.minute >= 13:
                     login(email, passw)
                     sleep(((60 - now.minute) + 8)*60)
-                if hours == 15:
+                if( hours == 15) and now.minute >= 8:
                     login(email, passw)
                     sleep(((60 - now.minute) + 60)*60)
                 else:
+                    print('check time')
                     sleep(1)
-        except:
-            sys.exit()
+                    continue
+        except Exception as ex:
+            print(ex)
 
 
 
 
+# def get_running_processes():
+#     running_processes = []
+#     for process in psutil.process_iter():
+#         try:
+#             process_info = process.as_dict(attrs=['pid', 'name'])
+#             running_processes.append(process_info)
+#         except psutil.NoSuchProcess:
+#             pass
+#     return running_processes
+
+# # Получаем список запущенных процессов
+
+
+
+
+# processes = get_running_processes()
+
+# Выводим информацию о каждом процессе
 
 
 if __name__ == "__main__":
-    print('if name == main start')
-    existing_processes = [p.name for p in multiprocessing.active_children()]
-    if 'waitbindkey' not in existing_processes:
-        print("if 'waitbindkey' not in existing_processes: = True")
-        print(multiprocessing.active_children())
-        # Если процесс не запущен, создаем новый процесс для ожидания клавиши и запускаем GUI
-        proces = multiprocessing.Process(target=waitbindkey, name='waitbindkey')
-        proces.start()
-        print('proces.start')
+    try:
         ft.app(guiapp)
-        proces.terminate()
-        
+
+    except Exception as ex:
+        print(ex)
