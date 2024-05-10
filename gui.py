@@ -1,5 +1,6 @@
 import flet as ft
-import multiprocessing
+import threading
+import asyncio
 import sys
 import os
 import configparser
@@ -13,7 +14,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 import fake_useragent
 import pyautogui
 from time import sleep
-
 
 import configparser
 
@@ -29,10 +29,13 @@ EXE_DIR = os.path.dirname(EXE_PATH)
 
 # Путь к файлу настроек
 SETTINGS_INI_PATH = os.path.join(EXE_DIR, 'settings.ini')
+email = 'None'
+passw = 'None'
 
 # Создаем ConfigParser
 config = configparser.ConfigParser()
 
+onapp = False
 # Если файл настроек не существует, создаем его
 if not os.path.exists(SETTINGS_INI_PATH):
     with open(SETTINGS_INI_PATH, 'w') as configfile:
@@ -42,8 +45,9 @@ if not os.path.exists(SETTINGS_INI_PATH):
 
 # Читаем файл настроек
 config.read(SETTINGS_INI_PATH)
-sldksg = None
 
+
+# Гуишка
 def guiapp(page: ft.Page):
     page.title = "🔥UrokJoiner v4🔥 by Feryuvva"
     page.theme_mode = 'dark'
@@ -60,23 +64,25 @@ def guiapp(page: ft.Page):
         page.update()
 
     def autojoin(e):
-        global sldksg
-        print('@' in config['CONFIG']['email'])
-        if (sldksg is None or not sldksg.is_alive()) and ('@' in config['CONFIG']['email'] == False):
-            sldksg = multiprocessing.Process(target=main)
-            sldksg.start()
+        global main_thread
+        global onapp
+        print('Button press')
+        print(onapp)
+        if '@' in config['CONFIG']['email'] and onapp == False:
+            onapp = True
             autojoinbutton.text = 'Auto-Join On'
             page.update()
-        elif sldksg is not None and sldksg.is_alive():
+            asyncio.run(start_main())
+        elif onapp == True:
             try:
-                sldksg.terminate()
-                sldksg.join()
+                onapp = False
             except:
-                return
+                pass
             autojoinbutton.text = 'Auto-Join Off'
             page.update()
+            main_thread = None
         else:
-            return
+            print('Else')
 
 
     def passinput(e):
@@ -99,29 +105,49 @@ def guiapp(page: ft.Page):
                 config["CONFIG"]['email'] = emailtextfield.value
                 with open('settings.ini', 'w') as configfile:
                     config.write(configfile)
-
+    def visiblepassword(e):
+        if passwtextfield.password:
+            passwtextfield.password = False
+        else:
+            passwtextfield.password = True
+        page.update()
+    
     data = config['CONFIG']
     if data['email'] != "None":
         emailtextfield = ft.TextField(value=data['email'],label='Enter email', on_submit=emailinput)
     else:
         emailtextfield = ft.TextField(label='Enter email', on_submit=emailinput)
+
+
     if data['passw'] != "None":
         passwtextfield = ft.TextField(value=data['passw'],label='Enter password', on_submit=passinput, password=True)
     else:
         passwtextfield = ft.TextField(label='Enter password', on_submit=passinput, password=True)
-    chngthembutton = ft.IconButton(icon=ft.icons.SUNNY, on_click=changetheme)
 
-    autojoinbutton = ft.OutlinedButton('Auto-Join Off', on_click=autojoin)
+
+    chngthembutton = ft.IconButton(icon=ft.icons.SUNNY, on_click=changetheme)
+    checkpasswordbutton = ft.IconButton(icon=ft.icons.REMOVE_RED_EYE, on_click=visiblepassword)
+
+
+
+    autojoinbutton = ft.OutlinedButton(text='Auto-Join Off', on_click=autojoin)
 
     submitbutton = ft.OutlinedButton('Submit', on_click=submit)
 
+
+
     github = ft.IconButton(icon=ft.icons.MESSAGE, url="https://github.com/Feryuvva")
     discord = ft.IconButton(icon=ft.icons.DISCORD, url="https://discordapp.com/users/1016393252972273764/")
+
     mainrow = ft.Row(
         [
             ft.Column([            
                 emailtextfield,
-                passwtextfield,
+                ft.Row([
+                    passwtextfield,
+                    checkpasswordbutton
+                ]),
+                
                 ft.Row([
                     submitbutton,
                     autojoinbutton
@@ -140,8 +166,9 @@ def guiapp(page: ft.Page):
         row_left_down
     )
 
-
+# Нажимает розклад и выбирает урок
 def joinonlesson(browser):
+    print('start joinonlesson')
     now = datetime.datetime.now()
     hours = now.hour
     lessons = {
@@ -174,13 +201,19 @@ def joinonlesson(browser):
         numberoflesson -= 1
     elif now.weekday() == 4:
         numberoflesson -= 1
+        if hours >= 12:
+            numberoflesson -= 1
+        if hours == 11:
+            return
+    print(numberoflesson)
     try:
         number = lessons[now.weekday()][numberoflesson]
     except KeyError:
         return
-    sleep(2)
-    uroki = browser.find_elements(By.CLASS_NAME, "calendar-event-subject")
+    print('start try')
+    sleep(3)
     try:
+        uroki = browser.find_elements(By.CLASS_NAME, "calendar-event-subject")
         urok = 1
         for i in uroki:
             if urok == number:
@@ -189,6 +222,7 @@ def joinonlesson(browser):
                 break
             urok += 1
     except Exception as e: 
+        print(e)
         return
     try:                                                                     
         WebDriverWait(browser, 5).until(
@@ -199,24 +233,33 @@ def joinonlesson(browser):
     all_windows = browser.window_handles
     new_window = all_windows[-1]
     browser.switch_to.window(new_window)
-    url = browser.current_url
+    url = f"{browser.current_url}".replace('http', ' http').split(' ')
+    if len(url) > 2:
+        url = url[2]
+    else:
+        url = url[1]
     os.system(f'start {url}')
+    print(url)
     if 'meet.google' in url:
-        sleep(10)
+        sleep(15)
         pyautogui.hotkey('f11')
+        sleep(2)
         pyautogui.hotkey('ctrl', 'd')
+        sleep(2)
         pyautogui.hotkey('ctrl', 'e')
+        sleep(2)
         pyautogui.moveTo(1336, 517)
+        sleep(2)
         pyautogui.click()
     else:
-        sleep(10)
+        sleep(15)
         pyautogui.moveTo(1005, 600)
         pyautogui.click()
-    browser.close()
-    browser.quit()
+    return
 
 
 
+# Вход в хюман + нажатие на 141 лицей
 def login(username, parol):
     try:
         options = Options()
@@ -225,9 +268,8 @@ def login(username, parol):
         options.add_argument("--disable-blink-features=AutomationControlled")
 
         browser = webdriver.Chrome(options=options)
-
+        browser.set_window_size(1920, 1080)
         browser.get('https://id.human.ua/auth/login')
-
         login = WebDriverWait(browser, 10).until(
                 EC.element_to_be_clickable((By.XPATH, '/html/body/app-root/app-authorization/div/div[1]/div/app-login/div/div[4]/form/ng-input[1]/input'))
             )
@@ -249,67 +291,71 @@ def login(username, parol):
     finally:
         browser.close()
         browser.quit()
-    return
-email = 'None'
-passw = 'None'
+        return
+# Запуск мейна лоигчно?
+def start_main():
+    print(f"onapp = {onapp} try start main()!")
+    print(onapp)
+    while onapp == True:
+        print('main()')
+        main()
+    else:
+        return
+    
+
+# Запуск функции захода на урок вприцнипе, задержки между уроками и так далее
 def main():
+    global onapp
     print('start main()')
-    while True:
-        try:
-            data = config['CONFIG']
-            email = data['email']
-            passw = data['passw']
-            now = datetime.datetime.now()
-            hours = now.hour
-            if (8 <= hours <= 15 and email != 'None' and passw != 'None'):
-                if (hours == 8) and now.minute >= 27:
-                    login(email, passw)
-                    sleep(((60 - now.minute) + 23)*60)
-                if ((9 or 10 or 11 or 12) == hours) and now.minute >= 23:
-                    login(email, passw)
-                    sleep(((60 - now.minute) + 18)*60)
-                if (hours == 13) and now.minute >= 17:
-                    login(email, passw)
-                    sleep(((60 - now.minute) + 13)*60)
-                if (hours == 14) and now.minute >= 13:
-                    login(email, passw)
-                    sleep(((60 - now.minute) + 8)*60)
-                if( hours == 15) and now.minute >= 8:
-                    login(email, passw)
-                    sleep(((60 - now.minute) + 60)*60)
-                else:
-                    print('check time')
-                    sleep(1)
-                    continue
-        except Exception as ex:
-            print(ex)
-
-
-
-
-# def get_running_processes():
-#     running_processes = []
-#     for process in psutil.process_iter():
-#         try:
-#             process_info = process.as_dict(attrs=['pid', 'name'])
-#             running_processes.append(process_info)
-#         except psutil.NoSuchProcess:
-#             pass
-#     return running_processes
-
-# # Получаем список запущенных процессов
-
-
-
-
-# processes = get_running_processes()
-
-# Выводим информацию о каждом процессе
-
-
-if __name__ == "__main__":
     try:
-        ft.app(guiapp)
-
+        data = config['CONFIG']
+        email = data['email']
+        passw = data['passw']
+        now = datetime.datetime.now()
+        hours = now.hour
+        print(hours)
+        print(type(now.minute))
+        if 8 <= hours <= 15 and email != 'None' and passw != 'None':
+            if hours == 8 and now.minute >= 30:
+                print('start 9')
+                login(email, passw)
+                sleep(((60 - now.minute) + 23)*60)
+            if (9 == hours or 10 == hours or 11 == hours or 12 == hours) and now.minute >= 25:
+                print('start 9, 10, 11, 12')
+                login(email, passw)
+                sleep(((60 - now.minute) + 18)*60)
+            if hours == 13 and now.minute >= 20:
+                print('start 13')
+                login(email, passw)
+                sleep(((60 - now.minute) + 13)*60)
+            if 14 == hours and now.minute >= 15:
+                print('start 14')
+                login(email, passw)
+                sleep(((60 - now.minute) + 8)*60)
+            if hours == 15 and now.minute >= 10:
+                print('start 15')
+                login(email, passw)
+                onapp = False
+                return
+            else:
+                print('spatyli')
+        else:
+            print('check time')
+            sleep(1)
     except Exception as ex:
         print(ex)
+
+
+
+
+
+# Ура, Запускаем прогу!!
+if __name__ == "__main__":
+    try:
+        main_thread = threading.Thread(target=start_main)
+        ft.app(guiapp)
+    except Exception as ex:
+        print(ex)
+    finally:
+        onapp = False
+        sys.exit()
