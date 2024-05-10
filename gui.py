@@ -32,6 +32,67 @@ SETTINGS_INI_PATH = os.path.join(EXE_DIR, 'settings.ini')
 email = 'None'
 passw = 'None'
 
+
+
+
+
+text11 = ft.Checkbox('')
+text12 = ft.Checkbox('')
+text13 = ft.Checkbox('')
+text14 = ft.Checkbox('')
+text15 = ft.Checkbox('')
+text16 = ft.Checkbox('')
+text17 = ft.Checkbox('')
+text18 = ft.Checkbox('')
+text21 = ft.Checkbox('')
+text22 = ft.Checkbox('')
+text23 = ft.Checkbox('')
+text24 = ft.Checkbox('')
+text25 = ft.Checkbox('')
+text26 = ft.Checkbox('')
+text27 = ft.Checkbox('')
+text28 = ft.Checkbox('')
+text31 = ft.Checkbox('')
+text32 = ft.Checkbox('')
+text33 = ft.Checkbox('')
+text34 = ft.Checkbox('')
+text35 = ft.Checkbox('')
+text36 = ft.Checkbox('')
+text37 = ft.Checkbox('')
+text38 = ft.Checkbox('')
+text41 = ft.Checkbox('')
+text42 = ft.Checkbox('')
+text43 = ft.Checkbox('')
+text44 = ft.Checkbox('')
+text45 = ft.Checkbox('')
+text46 = ft.Checkbox('')
+text47 = ft.Checkbox('')
+text48 = ft.Checkbox('')
+text51 = ft.Checkbox('')
+text52 = ft.Checkbox('')
+text53 = ft.Checkbox('')
+text54 = ft.Checkbox('')
+text55 = ft.Checkbox('')
+text56 = ft.Checkbox('')
+text57 = ft.Checkbox('')
+text58 = ft.Checkbox('')
+
+
+
+checkboxesurokiMon = [text11, text12, text13, text14, text15, text16, text17, text18]
+checkboxesurokiTue = [text21, text22, text23, text24, text25, text26, text27, text28]
+checkboxesurokiWed = [text31, text32, text33, text34, text35, text36, text37, text38]
+checkboxesurokiThu = [text41, text42, text43, text44, text45, text46, text47, text48]
+checkboxesurokiFri = [text51, text52, text53, text54, text55, text56, text57, text58]
+
+checkboxesuroki = [text11, text12, text13, text14, text15, text16, text17, text18,
+text21, text22, text23, text24, text25, text26, text27, text28,
+text31, text32, text33, text34, text35, text36, text37, text38,
+text41, text42, text43, text44, text45, text46, text47, text48,
+text51, text52, text53, text54, text55, text56, text57, text58
+]
+
+
 # Создаем ConfigParser
 config = configparser.ConfigParser()
 
@@ -40,8 +101,9 @@ onapp = False
 if not os.path.exists(SETTINGS_INI_PATH):
     with open(SETTINGS_INI_PATH, 'w') as configfile:
         configfile.write('[CONFIG]\n')
-        configfile.write('email = \n')
-        configfile.write('passw = \n')
+        configfile.write('email = None\n')
+        configfile.write('passw = None\n')
+        configfile.write('lessons = None\n')
 
 # Читаем файл настроек
 config.read(SETTINGS_INI_PATH)
@@ -50,11 +112,32 @@ config.read(SETTINGS_INI_PATH)
 # Гуишка
 def guiapp(page: ft.Page):
     page.title = "🔥UrokJoiner v4🔥 by Feryuvva"
+    page.window_top = 250
+    page.window_left = 550
     page.theme_mode = 'dark'
-    page.window_width = 430
-    page.window_height = 270
+    page.window_width = 430         #430
+    page.window_height = 330        #270
     page.window_resizable = False
     page.vertical_alignment=ft.MainAxisAlignment.CENTER
+
+
+    def changepages(e):
+        pages = [mainpage, settingspage]
+        page.clean()
+        if page.navigation_bar.selected_index == 1:
+            page.add(pages[1])
+            page.window_width = 650
+            page.window_height = 500
+            page.window_top = 170
+            page.window_left = 450
+        else:
+            page.add(pages[0])
+            page.window_width = 430
+            page.window_height = 330
+            page.window_top = 250
+            page.window_left = 550
+        page.update()
+
 
     def changetheme(e):
         if page.theme_mode == 'dark':
@@ -95,10 +178,45 @@ def guiapp(page: ft.Page):
     def submit(e):
         config.read(SETTINGS_INI_PATH)
         if emailtextfield.value != config["CONFIG"]['email'] and passwtextfield.value != config["CONFIG"]['passw']:
+            print(config['CONFIG']['lessons'])
             config["CONFIG"]['email'] = emailtextfield.value
             config["CONFIG"]['passw'] = passwtextfield.value
             with open('settings.ini', 'w') as configfile:
+                i = 0
+                lessons = {
+                    0: [],
+                    1: [],
+                    2: [],
+                    3: [],
+                    4: [],
+                }
+                print(str(lessons))
+                for text in checkboxesurokiMon:
+                    if text.value:
+                        i += 1
+                        lessons[0].append(i)
+                for text in checkboxesurokiTue:
+                    if text.value:
+                        i += 1
+                        lessons[1].append(i)
+                for text in checkboxesurokiWed:
+                    if text.value:
+                        i += 1
+                        lessons[2].append(i)
+                for text in checkboxesurokiThu:
+                    if text.value:
+                        i += 1
+                        lessons[3].append(i)
+                for text in checkboxesurokiFri:
+                    if text.value:
+                        i += 1
+                        lessons[4].append(i)
+                config["CONFIG"]['lessons'] = str(lessons)
                 config.write(configfile)
+            print(str(lessons))
+
+
+        
     def emailinput(e):
             config.read(SETTINGS_INI_PATH)
             if emailtextfield.value != config["CONFIG"]['email']:
@@ -111,8 +229,19 @@ def guiapp(page: ft.Page):
         else:
             passwtextfield.password = True
         page.update()
+    def openhuman(e):
+        os.system(f"start https://lms.human.ua/app/calendar")
     
     data = config['CONFIG']
+    lessons = eval(data['lessons'])
+    print(range(len(lessons[2])))
+    if data['lessons'] != 'None':
+        for i in range(len(lessons[0])):checkboxesurokiMon[i].value = True
+        for i in range(len(lessons[1])):checkboxesurokiTue[i].value = True
+        for i in range(len(lessons[2])):checkboxesurokiWed[i].value = True
+        for i in range(len(lessons[3])):checkboxesurokiThu[i].value = True
+        for i in range(len(lessons[4])):checkboxesurokiFri[i].value = True
+
     if data['email'] != "None":
         emailtextfield = ft.TextField(value=data['email'],label='Enter email', on_submit=emailinput)
     else:
@@ -133,13 +262,26 @@ def guiapp(page: ft.Page):
     autojoinbutton = ft.OutlinedButton(text='Auto-Join Off', on_click=autojoin)
 
     submitbutton = ft.OutlinedButton('Submit', on_click=submit)
-
+    openHumanbutton = ft.OutlinedButton('Open HUMAN', on_click=openhuman)
 
 
     github = ft.IconButton(icon=ft.icons.MESSAGE, url="https://github.com/Feryuvva")
     discord = ft.IconButton(icon=ft.icons.DISCORD, url="https://discordapp.com/users/1016393252972273764/")
 
-    mainrow = ft.Row(
+    mainpage = ft.Row(
+        [
+            ft.Column([
+                autojoinbutton,
+                openHumanbutton,
+                ft.Row([
+                    chngthembutton,
+                    github,
+                    discord
+                ])
+            ], alignment=ft.MainAxisAlignment.CENTER),
+
+        ])
+    settingspage = ft.Row(
         [
             ft.Column([            
                 emailtextfield,
@@ -147,23 +289,106 @@ def guiapp(page: ft.Page):
                     passwtextfield,
                     checkpasswordbutton
                 ]),
-                
                 ft.Row([
+                    chngthembutton,
+                    github,
+                    discord,
+                    ft.Text('                 '),
                     submitbutton,
-                    autojoinbutton
                 ])
             ]),
-        ], alignment=ft.MainAxisAlignment.CENTER
+            ft.Column([
+                
+                ft.Row([
+                    ft.Text('   '),
+                    ft.Text('Mon '),
+                    ft.Text('Tue '),
+                    ft.Text('Wed '),
+                    ft.Text('Thu   '),
+                    ft.Text('Fri '),
+                ]),
+                ft.Row([
+                    ft.Text('1'),
+                    text11,
+                    text21,
+                    text31,
+                    text41,
+                    text51
+                    ]),
+                ft.Row([
+                    ft.Text('2'),
+                    text12,
+                    text22,
+                    text32,
+                    text42,
+                    text52
+                    ]),
+                ft.Row([
+                    ft.Text('3'),
+                    text13,
+                    text23,
+                    text33,
+                    text43,
+                    text53
+                    ]),
+                ft.Row([
+                    ft.Text('4'),
+                    text14,
+                    text24,
+                    text34,
+                    text44,
+                    text54
+                    ]),
+                ft.Row([
+                    ft.Text('5'),
+                    text15,
+                    text25,
+                    text35,
+                    text45,
+                    text55
+                    ]),
+                ft.Row([
+                    ft.Text('6'),
+                    text16,
+                    text26,
+                    text36,
+                    text46,
+                    text56
+                    ]),
+                ft.Row([
+                    ft.Text('7'),
+                    text17,
+                    text27,
+                    text37,
+                    text47,
+                    text57
+                    ]),
+                ft.Row([
+                    ft.Text('8'),
+                    text18,
+                    text28,
+                    text38,
+                    text48,
+                    text58
+                    ])
+            ]),
+            
+        ],
     )
-    row_left_down = ft.Row([
-        chngthembutton,
-        github,
-        discord
-    ], alignment=ft.MainAxisAlignment.START,vertical_alignment=ft.VerticalAlignment.END
+
+
+
+    page.navigation_bar = ft.NavigationBar(destinations=[
+        ft.NavigationDestination(icon=ft.icons.HOME, label="Home"),
+        ft.NavigationDestination(icon=ft.icons.SETTINGS, label="Settings")
+    ],
+    on_change=changepages,
+    height=65
     )
+
+
     page.add(
-        mainrow,
-        row_left_down
+        mainpage
     )
 
 # Нажимает розклад и выбирает урок
@@ -171,13 +396,7 @@ def joinonlesson(browser):
     print('start joinonlesson')
     now = datetime.datetime.now()
     hours = now.hour
-    lessons = {
-        0 : [1, 2, 3, 4, 5, 6, 7],
-        1 : [8, 9, 10, 11, 12, 13, 14, 15],
-        2 : [16, 17, 18, 19, 20, 21, 22],
-        3 : [23, 24, 25, 26, 27, 28, 29],
-        4 : [30, 31, 32, 33, 34, 35, 36]
-    }
+    lessons = config['CONFIG']['lessons']
     try:
         if hours == 8:
             numberoflesson = 0
